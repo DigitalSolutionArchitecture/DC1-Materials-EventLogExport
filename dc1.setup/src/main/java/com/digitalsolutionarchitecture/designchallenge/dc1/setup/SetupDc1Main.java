@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
@@ -64,7 +65,17 @@ public class SetupDc1Main {
 		try(
 			Connection c = DriverManager.getConnection("jdbc:mysql://" + mysqlHost + ":" + mysqlPort + "/" + mysqlDatabase + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", mysqlUser, mysqlPassword);
 			PreparedStatement s = c.prepareStatement("INSERT INTO tblProcessLogData VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			PreparedStatement s2 = c.prepareStatement("SELECT MAX(ProcessId) FROM tblProcessLogData");
+			ResultSet rs = s2.executeQuery();
 			) {
+			
+			rs.next();
+			int startPid = rs.getInt(1);
+			if(rs.wasNull()) {
+				startPid= 0;
+			} else {
+				startPid++;
+			}
 			System.out.println("done");
 			Random random = new Random(1);
 			
@@ -72,7 +83,7 @@ public class SetupDc1Main {
 			c.setAutoCommit(false);
 			long start = System.currentTimeMillis();
 			for(int p = 0; p < processInstances; p++) {
-				s.setInt(1, p);
+				s.setInt(1, p + startPid);
 				s.setInt(3, random.nextInt(1000000));
 				for(int i = 0; i < eventsPerProcessInstance; i++) {
 					s.setInt(2, i);
